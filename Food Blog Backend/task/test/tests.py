@@ -106,13 +106,14 @@ class SQLite3Test:
 class FoodBlogStage1(StageTest):
     @dynamic_test
     def test(self):
-        #  (table, (columns,), nr_of_records, (PK, ), ((NOT NULL, ), (not NOT NULL, )))
+        #  (table, (columns,), nr_of_records, (PK, ), ((NOT NULL, ), (not NOT NULL, )), ((FK, ), (not FK, )), ((UNIQUE, ), (not UNIQUE, )))
         test_data = ("food_blog.db",
                     (
-                        ("measures", ("measure_id", "measure_name"), 8, ("measure_id", ), ((), ("measure_name", ))),
-                        ("ingredients", ("ingredient_id", "ingredient_name"), 6, ("ingredient_id", ), (("ingredient_name",), ())),
-                        ("meals", ("meal_id", "meal_name"), 4, ("meal_id", ), (("meal_name",), ())),
-                        ("recipes", ("recipe_id", "recipe_name", "recipe_description"), 0, ("recipe_id", ), (("recipe_name", ), ("recipe_description", ))),
+                            ("measures", ("measure_id", "measure_name"), 8, ("measure_id", ), ((), ("measure_name", )), ((), ()), (("measure_name", ), ())),
+                            ("ingredients", ("ingredient_id", "ingredient_name"), 6, ("ingredient_id", ), (("ingredient_name",), ()), ((), ()), (("ingredient_name", ), ())),
+                            ("meals", ("meal_id", "meal_name"), 4, ("meal_id", ), (("meal_name",), ()), ((), ()), (("meal_name", ), ())),
+                            ("recipes", ("recipe_id", "recipe_name", "recipe_description"), 0, ("recipe_id", ), (("recipe_name", ), ("recipe_description", )), ((), ()), ((), ("recipe_name", "recipe_description",))),
+                            ("serve", ("serve_id", "recipe_id", "meal_id"), 0, ("serve_id", ), (("recipe_id", "meal_id"), ()), (("recipe_id", "meal_id"), ()), ((), ())),
                     ))
 
         dbase = SQLite3Test(test_data[0])
@@ -149,15 +150,24 @@ class FoodBlogStage1(StageTest):
 
             for column in table[4][1]:
                 if not dbase.table_info(table[0], column, "NN"):
+                    dbase.close()
                     return CheckResult.wrong(f"Column {column} in table {table[0]} should not have Not Null attribute.")
 
-        for item in ("Milkshake\nBlend all ingredients and put in the fridge.\n",
-                    "Hot cacao\nPour the ingredients into the hot milk. Mix it up.\n",
-                    "Fruit salad\nCut strawberries and mix with other fruits. you can sprinkle everything with sugar.\n",
+            for column in table[5][0]:
+                dbase.is_foreign_key(table[0], column)
+
+            for column in table[6][0]:
+                dbase.is_unique(table[0], column)
+
+        for item in ("Milkshake\nBlend all ingredients and put in the fridge.\n1 3 4\n",
+                    "Hot cacao\nPour the ingredients into the hot milk. Mix it up.\n1 4\n",
+                    "Hot cacao\nPour the ingredients into the hot milk. Mix it up.\n1\n",
+                    "Fruit salad\nCut strawberries and mix with other fruits. you can sprinkle everything with sugar.\n3 4\n",
                     "\n"):
             pr.execute(item)
 
-        dbase.number_of_records("recipes", 3)
+        dbase.number_of_records("recipes", 4)
+        dbase.number_of_records("serve", 8)
 
         if not pr.is_finished():
             return CheckResult.wrong("Your program unnecessarily waiting for input.")

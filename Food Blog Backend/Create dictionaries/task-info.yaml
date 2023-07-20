@@ -200,7 +200,7 @@ files:
 - name: food_blog.s3db-journal
   visible: true
   learner_created: true
-feedback_link: https://hyperskill.org/projects/167/stages/864/implement#comment
+feedback_link: https://hyperskill.org/learn/step/12374#comment
 status: Solved
 feedback:
   message: Congratulations!
