@@ -106,13 +106,15 @@ class SQLite3Test:
 class FoodBlogStage1(StageTest):
     @dynamic_test
     def test(self):
-        #  (table, (columns,), nr_of_records, (PK, ), ((NOT NULL, ), (not NOT NULL, )))
+        #  (table, (columns,), nr_of_records, (PK, ), ((NOT NULL, ), (not NOT NULL, )), ((FK, ), (not FK, )), ((UNIQUE, ), (not UNIQUE, )))
         test_data = ("food_blog.db",
                     (
-                        ("measures", ("measure_id", "measure_name"), 8, ("measure_id", ), ((), ("measure_name", ))),
-                        ("ingredients", ("ingredient_id", "ingredient_name"), 6, ("ingredient_id", ), (("ingredient_name",), ())),
-                        ("meals", ("meal_id", "meal_name"), 4, ("meal_id", ), (("meal_name",), ())),
-                        ("recipes", ("recipe_id", "recipe_name", "recipe_description"), 0, ("recipe_id", ), (("recipe_name", ), ("recipe_description", ))),
+                            ("measures", ("measure_id", "measure_name"), 8, ("measure_id", ), ((), ("measure_name", )), ((), ()), (("measure_name", ), ())),
+                            ("ingredients", ("ingredient_id", "ingredient_name"), 6, ("ingredient_id", ), (("ingredient_name",), ()), ((), ()), (("ingredient_name", ), ())),
+                            ("meals", ("meal_id", "meal_name"), 4, ("meal_id", ), (("meal_name",), ()), ((), ()), (("meal_name", ), ())),
+                            ("recipes", ("recipe_id", "recipe_name", "recipe_description"), 0, ("recipe_id", ), (("recipe_name", ), ("recipe_description", )), ((), ()), ((), ("recipe_name", "recipe_description",))),
+                            ("serve", ("serve_id", "recipe_id", "meal_id"), 0, ("serve_id", ), (("recipe_id", "meal_id"), ()), (("recipe_id", "meal_id"), ()), ((), ())),
+                            ("quantity", ("quantity_id", "quantity", "recipe_id", "measure_id", "ingredient_id"), 0, ("quantity_id", ), (("quantity", "recipe_id", "measure_id", "ingredient_id"), ()), (("recipe_id", "measure_id", "ingredient_id"), ()), ((), ())),
                     ))
 
         dbase = SQLite3Test(test_data[0])
@@ -149,15 +151,30 @@ class FoodBlogStage1(StageTest):
 
             for column in table[4][1]:
                 if not dbase.table_info(table[0], column, "NN"):
+                    dbase.close()
                     return CheckResult.wrong(f"Column {column} in table {table[0]} should not have Not Null attribute.")
 
-        for item in ("Milkshake\nBlend all ingredients and put in the fridge.\n",
-                    "Hot cacao\nPour the ingredients into the hot milk. Mix it up.\n",
-                    "Fruit salad\nCut strawberries and mix with other fruits. you can sprinkle everything with sugar.\n",
-                    "\n"):
+            for column in table[5][0]:
+                dbase.is_foreign_key(table[0], column)
+
+            for column in table[6][0]:
+                dbase.is_unique(table[0], column)
+
+        #  (table, (columns,), nr_of_records, (PK, ), ((NOT NULL, ), (not NOT NULL, )), ((FK, ), (not FK, )), ((UNIQUE, ), (not UNIQUE, )))
+        for item in ("Milkshake\nBlend all ingredients and put in the fridge.\n1 3 4\n500 ml milk\n1 cup strawberry\n1 tbsp sugar\n",
+                        "\n",
+                        "Hot cacao\nPour the ingredients into the hot milk. Mix it up.\n1 2\n250 ml milk\n2 tbsp cacao\n",
+                        "\n",
+                        "Hot cacao\nPour the ingredients into the hot milk. Mix it up.\n1 4\n250 ml milk\n2 tbsp cacao\n1 tsp sugar\n",
+                        "\n",
+                        "Fruit salad\nCut strawberries and mix with other fruits. you can sprinkle everything with sugar.\n3 4\n100 g strawberry\n50 g black\n1 cup blue\n1 tsp sugar\n",
+                        "\n",
+                        "\n"):
             pr.execute(item)
 
-        dbase.number_of_records("recipes", 3)
+        dbase.number_of_records("recipes", 4)
+        dbase.number_of_records("serve", 9)
+        dbase.number_of_records("quantity", 12)
 
         if not pr.is_finished():
             return CheckResult.wrong("Your program unnecessarily waiting for input.")
@@ -175,5 +192,4 @@ class FoodBlogStage1(StageTest):
 
 if __name__ == '__main__':
     FoodBlogStage1().run_tests()
-
 

@@ -215,6 +215,12 @@ files:
         FoodBlogStage1().run_tests()
 
   learner_created: false
-feedback_link: https://hyperskill.org/projects/167/stages/867/implement#comment
-status: Unchecked
+- name: food_blog.db
+  visible: true
+  learner_created: true
+feedback_link: https://hyperskill.org/learn/step/12377#comment
+status: Solved
+feedback:
+  message: Congratulations!
+  time: "Thu, 20 Jul 2023 09:46:23 UTC"
 record: -1
